@@ -25,16 +25,22 @@ class StockTradingEnv(gym.Env):
         self.df = df
         self.reward_range = (0, MAX_ACCOUNT_BALANCE)
 
-        # Actions of the format Buy x%, Sell x%, Hold, etc.
+        # Actions of the format Buy x%, Sell x%, Hold
         self.action_space = spaces.Box(
             low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float16)
+            #This can be 0.0 to 3.0 for the buy,sell,hold action
+            # and 0.0 to 1.0 for the percentage bought/sold
 
         # Prices contains the OHCL values for the last five prices
+        #This contains all input variables we want our agent to consider
+        #He chooses date,open,high,low,close,volume
         self.observation_space = spaces.Box(
             low=0, high=1, shape=(6, 6), dtype=np.float16)
 
     def _next_observation(self):
         # Get the stock data points for the last 5 days and scale to between 0-1
+        # Why does he move 5 data points at a time
+        #What if we edited this to just 'Close','Volume',
         frame = np.array([
             self.df.loc[self.current_step: self.current_step +
                         5, 'Open'].values / MAX_SHARE_PRICE,
@@ -62,6 +68,7 @@ class StockTradingEnv(gym.Env):
 
     def _take_action(self, action):
         # Set the current price to a random price within the time step
+        # Don't exactly see a reason for this random choice
         current_price = random.uniform(
             self.df.loc[self.current_step, "Open"], self.df.loc[self.current_step, "Close"])
 
@@ -70,14 +77,27 @@ class StockTradingEnv(gym.Env):
 
         if action_type < 1:
             # Buy amount % of balance in shares
+
+            #total shares it could possibly buy with the current balance
             total_possible = int(self.balance / current_price)
+
+            #buy amount percentage of the shares it could possibly buy
             shares_bought = int(total_possible * amount)
+
+            #Total amount that was paid for the previous stocks
             prev_cost = self.cost_basis * self.shares_held
+
+            #Cost added now that it's buying more
             additional_cost = shares_bought * current_price
 
+            #subtract the additions from the additional_cost
             self.balance -= additional_cost
+
+            #Set cost basis as total value of the stocks purchased divided by total number of shares
             self.cost_basis = (
                 prev_cost + additional_cost) / (self.shares_held + shares_bought)
+
+            #Add the new shares to the shares_held
             self.shares_held += shares_bought
 
         elif action_type < 2:
@@ -88,26 +108,33 @@ class StockTradingEnv(gym.Env):
             self.total_shares_sold += shares_sold
             self.total_sales_value += shares_sold * current_price
 
+        #Net worth is balance plus current value of the stocks
         self.net_worth = self.balance + self.shares_held * current_price
 
+        #If our net worth is greater than the max, set to the max (?)
         if self.net_worth > self.max_net_worth:
             self.max_net_worth = self.net_worth
 
+        #If we pass through while 'holding', just set cost_basis to 0
         if self.shares_held == 0:
             self.cost_basis = 0
 
     def step(self, action):
-        # Execute one time step within the environment
+        # Execute one time step within the current environment
         self._take_action(action)
 
         self.current_step += 1
 
+        #If we're at the end of the dataset, start over at 0???
+        #This actually doesn't seem like a good idea unless it's necessary
         if self.current_step > len(self.df.loc[:, 'Open'].values) - 6:
             self.current_step = 0
 
+        #Set the reward as the balance * delay multiplier to encourage later rewards
         delay_modifier = (self.current_step / MAX_STEPS)
-
         reward = self.balance * delay_modifier
+        #If our network falls to 0 or below 0, we are done
+        #Maybe also set done to true if we run out of steps ?
         done = self.net_worth <= 0
 
         obs = self._next_observation()
@@ -118,13 +145,14 @@ class StockTradingEnv(gym.Env):
         # Reset the state of the environment to an initial state
         self.balance = INITIAL_ACCOUNT_BALANCE
         self.net_worth = INITIAL_ACCOUNT_BALANCE
-        self.max_net_worth = INITIAL_ACCOUNT_BALANCE
+        self.max_net_worth = INITIAL_ACCOUNT_BALANCE #Why is our max equal to our initial balance
         self.shares_held = 0
         self.cost_basis = 0
         self.total_shares_sold = 0
         self.total_sales_value = 0
 
-        # Set the current step to a random point within the data frame
+        # Set the current step to a random point within the data frame in order
+        # to encourage exploration
         self.current_step = random.randint(
             0, len(self.df.loc[:, 'Open'].values) - 6)
 
