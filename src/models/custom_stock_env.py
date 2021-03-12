@@ -15,7 +15,6 @@ class CustomTradingEnv(gym.Env):
 
     def __init__(self,stock_df):
         super(CustomTradingEnv,self).__init__()
-
         self.stock_df = stock_df
 
 
