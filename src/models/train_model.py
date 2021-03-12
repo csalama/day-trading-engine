@@ -56,9 +56,9 @@ def build_dqn(model,actions):
     """
     #Parameters to define:
     learning_rate = 1e-3
-    nb_steps_warmup = #TO DEFINE
-    seq_memory_limit = #TO DEFINE
-    #Add a second target network to reduce overfitting.
+    nb_steps_warmup = 100  #Determines how long we wait before we start doing experience replay, which is when we actually start training the network
+    seq_memory_limit = 50000 #Maximum size for the memory object. Forgets old details as new things are added to the memory.
+    #Add a second target or dueling network to reduce overfitting.
     enable_double_dqn = False
     enable_dueling_network = False
 
