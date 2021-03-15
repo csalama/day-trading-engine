@@ -13,7 +13,6 @@ from build_model import train_agent, build_dqn, build_sequential
 from stock_env import StockTradingEnv
 #import src.build_features
 
-
 FIN_PATH = os.path.join(PROJECT_PATH,'data/processed/MSFT_1year_feat.csv')
 
 def train_model():
