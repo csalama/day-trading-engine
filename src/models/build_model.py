@@ -13,9 +13,6 @@ from rl.memory import SequentialMemory
 
 
 def train_agent(env):
-    """
-
-    """
     #Model Parameters:
 
     ###Compiler
@@ -38,16 +35,16 @@ def train_agent(env):
                                 min_delta = 0,
                                 restore_best_weights = restore_best_weights
                                 )] #Maybe add TensorBoard for details in the future
-
-    agent = build_agent(model,actions) #Actions is undefined
+    states =
+    model = build_sequential(states,actions)
+    agent = build_dqn(model,actions) #Actions is undefined
     agent.compile(optimizer,metrics=metrics)
     training_history = agent.fit(env,
                         callbacks=callbacks,
                         nb_steps=nb_steps,
                         visualize=False,
-                        verbose=verbose
-                        )
-    return dqn
+                        verbose=verbose)
+    return dqn,training_history
 
 
 def build_dqn(model,actions):
@@ -56,11 +53,11 @@ def build_dqn(model,actions):
     """
     #Parameters to define:
     learning_rate = 1e-3
-    nb_steps_warmup = 100  #Determines how long we wait before we start doing experience replay, which is when we actually start training the network
+    nb_steps_warmup = 0 #100  #Determines how long we wait before we start doing experience replay, which is when we actually start training the network
     seq_memory_limit = 50000 #Maximum size for the memory object. Forgets old details as new things are added to the memory.
-    #Add a second target or dueling network to reduce overfitting.
-    enable_double_dqn = False
-    enable_dueling_network = False
+    #Add a second target or dueling network to reduce overfitting. May not be necessary with keras-rl
+    #enable_double_dqn = False
+    #enable_dueling_network = False
 
     #Build the RL agent, memory, policy, add callback
 
@@ -72,10 +69,7 @@ def build_dqn(model,actions):
                     memory=memory,
                     policy=policy,
                     nb_actions=actions,
-                    nb_steps_warmup=nb_steps_warmup
-                    enable_double_dqn = enable_double_dqn
-                    enable_dueling_network = enable_dueling_network
-                    )
+                    nb_steps_warmup=nb_steps_warmup)
     return dqn
 
 

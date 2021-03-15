@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 import random
 import json
@@ -43,15 +44,25 @@ class StockTradingEnv(gym.Env):
         #What if we edited this to just 'Close','Volume',
         frame = np.array([
             self.df.loc[self.current_step: self.current_step +
-                        5, 'Open'].values / MAX_SHARE_PRICE,
+                        5, 'open'].values / MAX_SHARE_PRICE,
             self.df.loc[self.current_step: self.current_step +
-                        5, 'High'].values / MAX_SHARE_PRICE,
+                        5, 'high'].values / MAX_SHARE_PRICE,
             self.df.loc[self.current_step: self.current_step +
-                        5, 'Low'].values / MAX_SHARE_PRICE,
+                        5, 'low'].values / MAX_SHARE_PRICE,
             self.df.loc[self.current_step: self.current_step +
-                        5, 'Close'].values / MAX_SHARE_PRICE,
+                        5, 'close'].values / MAX_SHARE_PRICE,
             self.df.loc[self.current_step: self.current_step +
-                        5, 'Volume'].values / MAX_NUM_SHARES,
+                        5, 'volume'].values / MAX_NUM_SHARES,
+            self.df.loc[self.current_step: self.current_step +
+                        5, 'MA'].values / MAX_SHARE_PRICE,
+            self.df.loc[self.current_step: self.current_step +
+                        5, 'OBV'].values / MAX_NUM_SHARES,
+            self.df.loc[self.current_step: self.current_step +
+                        5, 'MACD'].values / MAX_NUM_SHARES,
+            self.df.loc[self.current_step: self.current_step +
+                        5, 'MACD_signal'].values / MAX_NUM_SHARES,
+            self.df.loc[self.current_step: self.current_step +
+                        5, 'RSI'].values / 100,
         ])
 
         # Append additional data and scale each value to between 0-1
@@ -70,7 +81,7 @@ class StockTradingEnv(gym.Env):
         # Set the current price to a random price within the time step
         # Don't exactly see a reason for this random choice
         current_price = random.uniform(
-            self.df.loc[self.current_step, "Open"], self.df.loc[self.current_step, "Close"])
+            self.df.loc[self.current_step, "open"], self.df.loc[self.current_step, "close"])
 
         action_type = action[0]
         amount = action[1]
@@ -127,7 +138,7 @@ class StockTradingEnv(gym.Env):
 
         #If we're at the end of the dataset, start over at 0???
         #This actually doesn't seem like a good idea unless it's necessary
-        if self.current_step > len(self.df.loc[:, 'Open'].values) - 6:
+        if self.current_step > len(self.df.loc[:, 'open'].values) - 6:
             self.current_step = 0
 
         #Set the reward as the balance * delay multiplier to encourage later rewards
@@ -154,7 +165,7 @@ class StockTradingEnv(gym.Env):
         # Set the current step to a random point within the data frame in order
         # to encourage exploration
         self.current_step = random.randint(
-            0, len(self.df.loc[:, 'Open'].values) - 6)
+            0, len(self.df.loc[:, 'open'].values) - 6)
 
         return self._next_observation()
 

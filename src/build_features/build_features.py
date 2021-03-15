@@ -11,7 +11,6 @@ load_dotenv()
 PROJECT_PATH = os.environ.get('PROJECT_PATH')
 AGG_PATH = os.path.join(PROJECT_PATH,'data/raw/MSFT_1year_agg.csv')
 
-
 def build_feature_dataset():
     df = import_dataset()
     #SMA
@@ -23,7 +22,7 @@ def build_feature_dataset():
     df['MACD_signal'] = talib.MACD(df['close'])[1]
     #RSI
     df['RSI'] = talib.RSI(df['close'])
-    df.to_csv(os.path.join(PROJECT_PATH,'data/processed/MSFT_1year_feat.csvs'))
+    df.to_csv(os.path.join(PROJECT_PATH,'data/processed/MSFT_1year_feat.csv'),index=False)
 
 def import_dataset():
     df = pd.read_csv(AGG_PATH)
@@ -37,7 +36,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
 
 
