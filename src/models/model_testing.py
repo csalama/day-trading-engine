@@ -2,10 +2,7 @@
 
 import os
 import sys
-from dotenv import load_dotenv
-load_dotenv()
-PROJECT_PATH = os.environ.get('PROJECT_PATH')
-sys.path.insert(0,PROJECT_PATH)
+PROJECT_PATH = os.path.dirname(os.path.dirname(os.getcwd())) #os.environ.get('PROJECT_PATH')
 
 import time
 import numpy as np
@@ -24,10 +21,9 @@ from stock_env import StockTradingEnv
 FIN_PATH = os.path.join(PROJECT_PATH,'data/processed/MSFT_1year_feat.csv')
 
 def train_model():
-
     #Params
-    train_timesteps=100
-    policy_kwargs = dict(net_arch=[dict(pi=[1024, 1024, 1024, 1024],vf=[1024, 1024, 1024, 1024])])
+    train_timesteps=124632 #75% of our training dataset
+    policy_kwargs = dict(net_arch=[dict(pi=[512, 512, 512, 512],vf=[512, 512, 512, 512])])
 
     ### Build environment
     df = import_dataset(FIN_PATH)
@@ -42,24 +38,20 @@ def train_model():
     model.learn(total_timesteps=train_timesteps)
     end = time.time()
     print('Training time (PPO): ', (end - start) / 60, ' minutes')
-    model.save(os.path.join(PROJECT_PATH,'model/ppo2_initial') )
+    model.save(os.path.join(PROJECT_PATH,'model/ppo2_main') )
 
     # ### Quickly validating
-    # obs_trade = env_val.reset()
 
-    # model = PPO2.load(os.path.join(PROJECT_PATH,'model/ppo2_initial'))
-    obs_trade = env_tr.reset()
-    reward_l = []
-    for i in range(train_timesteps):
-        action,_states=model.predict(obs_trade)
-        obs_trade, rewards, dones, info = env_tr.step(action)
-        reward_l.append(rewards[0])
-        if i == (train_timesteps-1):
-            last_state = env_tr.render()
-    print(reward_l)
-    plt.plot(range(train_timesteps),reward_l)
-    plt.show()
-
+    #model = PPO2.load(os.path.join(PROJECT_PATH,'model/ppo2_initial'))
+    # obs_trade = env_tr.reset()
+    # reward_l = []
+    # for i in range(train_timesteps):
+    #     action,_states=model.predict(obs_trade)
+    #     obs_trade, rewards, dones, info = env_tr.step(action)
+    #     reward_l.append(rewards[0])
+    #     if i == (train_timesteps-1):
+    #         last_state = env_tr.render()
+    # print(reward_l)
     return None
 
 def test_model():
