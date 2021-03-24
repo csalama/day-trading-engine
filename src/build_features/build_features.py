@@ -17,9 +17,9 @@ def build_feature_dataset():
     df['MA'] = talib.SMA(df['close'])
     #OBV
     df['OBV'] = talib.OBV(df['close'],df['volume'])
-    #MACD
-    df['MACD'] = talib.MACD(df['close'])[0]
-    df['MACD_signal'] = talib.MACD(df['close'])[1]
+    #MACD - tricky bounds, remove for now
+    #df['MACD'] = talib.MACD(df['close'])[0]
+    #df['MACD_signal'] = talib.MACD(df['close'])[1]
     #RSI
     df['RSI'] = talib.RSI(df['close'])
     df.to_csv(os.path.join(PROJECT_PATH,'data/processed/MSFT_1year_feat.csv'),index=False)

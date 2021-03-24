@@ -9,12 +9,11 @@ import numpy as np
 
 MAX_ACCOUNT_BALANCE = 2147483647
 MAX_NUM_SHARES = 2147483647
-MAX_SHARE_PRICE = 5000
-MAX_OPEN_POSITIONS = 5
-MAX_STEPS = 20000
+MAX_SHARE_PRICE = 5000 #### Pending ####
+MAX_OPEN_POSITIONS = 5 #### Pending ####
+MAX_STEPS = 50000 #### Pending ####
 
-INITIAL_ACCOUNT_BALANCE = 10000
-
+INITIAL_ACCOUNT_BALANCE = 100000 #### Pending ####
 
 class StockTradingEnv(gym.Env):
     """A stock trading environment for OpenAI gym"""
@@ -26,55 +25,63 @@ class StockTradingEnv(gym.Env):
         self.df = df
         self.reward_range = (0, MAX_ACCOUNT_BALANCE)
 
-        # Actions of the format Buy x%, Sell x%, Hold
+        # Actions of the format Buy x%, Sell x%, Hold.  Action space of 2.
         self.action_space = spaces.Box(
             low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float16)
-            #This can be 0.0 to 3.0 for the buy,sell,hold action
-            # and 0.0 to 1.0 for the percentage bought/sold
+        # Ranges:
+        # (0, 3.0) : Choose 0-1 buy, 1-2 sell, 2-3 hold for the stock
+        # (0, 1.0) : Percentage of stock to buy, 0% - 100%
 
-        # Prices contains the OHCL values for the last five prices
-        #This contains all input variables we want our agent to consider
-        #He chooses date,open,high,low,close,volume
+        #This contains all input variables we want our agent to consider scaled 0 to 1
         self.observation_space = spaces.Box(
-            low=0, high=1, shape=(6, 6), dtype=np.float16)
+            low=0, high=1, shape=(self.df.shape[0], 14), dtype=np.float16)
+            #1 by 14 box with (0,1) bounds for each
+
+        MAX_STEPS=self.df.shape[0]
 
     def _next_observation(self):
-        # Get the stock data points for the last 5 days and scale to between 0-1
-        # Why does he move 5 data points at a time
-        #What if we edited this to just 'Close','Volume',
-        frame = np.array([
-            self.df.loc[self.current_step: self.current_step +
-                        5, 'open'].values / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step: self.current_step +
-                        5, 'high'].values / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step: self.current_step +
-                        5, 'low'].values / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step: self.current_step +
-                        5, 'close'].values / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step: self.current_step +
-                        5, 'volume'].values / MAX_NUM_SHARES,
-            self.df.loc[self.current_step: self.current_step +
-                        5, 'MA'].values / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step: self.current_step +
-                        5, 'OBV'].values / MAX_NUM_SHARES,
-            self.df.loc[self.current_step: self.current_step +
-                        5, 'MACD'].values / MAX_NUM_SHARES,
-            self.df.loc[self.current_step: self.current_step +
-                        5, 'MACD_signal'].values / MAX_NUM_SHARES,
-            self.df.loc[self.current_step: self.current_step +
-                        5, 'RSI'].values / 100,
-        ])
+        # Get the stock data points next 1 minute and scale to between 0-1
 
-        # Append additional data and scale each value to between 0-1
-        obs = np.append(frame, [[
+        # Numpy version of next observation
+        # frame = np.array([
+        #     self.df.loc[self.current_step, 'open'] / MAX_SHARE_PRICE,
+        #     self.df.loc[self.current_step, 'high'] / MAX_SHARE_PRICE,
+        #     self.df.loc[self.current_step, 'low'] / MAX_SHARE_PRICE,
+        #     self.df.loc[self.current_step, 'close'] / MAX_SHARE_PRICE,
+        #     self.df.loc[self.current_step, 'volume'] / MAX_NUM_SHARES,
+        #     self.df.loc[self.current_step, 'MA'] / MAX_SHARE_PRICE,
+        #     self.df.loc[self.current_step, 'OBV'] / MAX_NUM_SHARES,
+        #     self.df.loc[self.current_step, 'RSI'] / 100
+        # ])
+        # # Append additional data and scale each value to between 0-1
+        # obs = np.append(frame, [
+        #     self.balance / MAX_ACCOUNT_BALANCE,
+        #     self.max_net_worth / MAX_ACCOUNT_BALANCE,
+        #     self.shares_held / MAX_NUM_SHARES,
+        #     self.cost_basis / MAX_SHARE_PRICE,
+        #     self.total_shares_sold / MAX_NUM_SHARES,
+        #     self.total_sales_value / (MAX_NUM_SHARES * MAX_SHARE_PRICE),
+        # ], axis=0)
+
+        # List version of next observation
+        obs = [
+            self.df.loc[self.current_step, 'open'] / MAX_SHARE_PRICE,
+            self.df.loc[self.current_step, 'high'] / MAX_SHARE_PRICE,
+            self.df.loc[self.current_step, 'low'] / MAX_SHARE_PRICE,
+            self.df.loc[self.current_step, 'close'] / MAX_SHARE_PRICE,
+            self.df.loc[self.current_step, 'volume'] / MAX_NUM_SHARES,
+            self.df.loc[self.current_step, 'MA'] / MAX_SHARE_PRICE,
+            self.df.loc[self.current_step, 'OBV'] / MAX_NUM_SHARES,
+            self.df.loc[self.current_step, 'RSI'] / 100,
             self.balance / MAX_ACCOUNT_BALANCE,
             self.max_net_worth / MAX_ACCOUNT_BALANCE,
             self.shares_held / MAX_NUM_SHARES,
             self.cost_basis / MAX_SHARE_PRICE,
             self.total_shares_sold / MAX_NUM_SHARES,
-            self.total_sales_value / (MAX_NUM_SHARES * MAX_SHARE_PRICE),
-        ]], axis=0)
+            self.total_sales_value / (MAX_NUM_SHARES * MAX_SHARE_PRICE)
+        ]
 
+        #print(f'\n\n Observation for step {self.current_step}: {obs}\n')
         return obs
 
     def _take_action(self, action):
@@ -82,7 +89,7 @@ class StockTradingEnv(gym.Env):
         # Don't exactly see a reason for this random choice
         current_price = random.uniform(
             self.df.loc[self.current_step, "open"], self.df.loc[self.current_step, "close"])
-
+        #print(f'Action in take_action function: {action}')
         action_type = action[0]
         amount = action[1]
 
@@ -122,7 +129,7 @@ class StockTradingEnv(gym.Env):
         #Net worth is balance plus current value of the stocks
         self.net_worth = self.balance + self.shares_held * current_price
 
-        #If our net worth is greater than the max, set to the max (?)
+        #If our net worth is greater than the max, set to the max (???)
         if self.net_worth > self.max_net_worth:
             self.max_net_worth = self.net_worth
 
@@ -132,23 +139,26 @@ class StockTradingEnv(gym.Env):
 
     def step(self, action):
         # Execute one time step within the current environment
+        print('Action given: {}'.format(action))
         self._take_action(action)
-
         self.current_step += 1
 
-        #If we're at the end of the dataset, start over at 0???
         #This actually doesn't seem like a good idea unless it's necessary
-        if self.current_step > len(self.df.loc[:, 'open'].values) - 6:
+        if self.current_step >= len(self.df.loc[:, 'open'].values) - 1:
+            #done = True
             self.current_step = 0
+            #might not accurately show the data if we go back in time randomly
 
+        done = self.net_worth <= 0  #If net worth falls to 0, done
         #Set the reward as the balance * delay multiplier to encourage later rewards
+
         delay_modifier = (self.current_step / MAX_STEPS)
-        reward = self.balance * delay_modifier
-        #If our network falls to 0 or below 0, we are done
-        #Maybe also set done to true if we run out of steps ?
-        done = self.net_worth <= 0
+        reward = (self.balance-INITIAL_ACCOUNT_BALANCE) * delay_modifier
 
         obs = self._next_observation()
+
+        if done:
+            self.render()
 
         return obs, reward, done, {}
 
@@ -164,9 +174,10 @@ class StockTradingEnv(gym.Env):
 
         # Set the current step to a random point within the data frame in order
         # to encourage exploration
-        self.current_step = random.randint(
-            0, len(self.df.loc[:, 'open'].values) - 6)
+        #Always start at 0 instead
+        self.current_step = 0 #random.randint(0, len(self.df.loc[:, 'open'].values) - 1)
 
+        #print('Within reset: {0}'.format(temp))
         return self._next_observation()
 
     def render(self, mode='human', close=False):
