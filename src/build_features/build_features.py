@@ -15,13 +15,31 @@ def build_feature_dataset():
     df = import_dataset()
     #SMA
     df['MA'] = talib.SMA(df['close'])
+
+    #TEMA
+    df['TEMA'] = talib.TEMA(df['close'])
+
     #OBV
     df['OBV'] = talib.OBV(df['close'],df['volume'])
-    #MACD - tricky bounds, remove for now
-    #df['MACD'] = talib.MACD(df['close'])[0]
-    #df['MACD_signal'] = talib.MACD(df['close'])[1]
+
+    #CCI
+    df['CCI'] = talib.CCI(df['high'],df['low'],df['close'])
+
+    #HT_TRENDLINE
+    df['HT_TRENDLINE'] = talib.HT_TRENDLINE(df['close'])
+
+    #BBANDS
+    df['BBAND_u'],df['BBAND_m'],df['BBAND_l'] = talib.BBANDS(df['close'])
+
+    #MOM
+    df['MOM'] = talib.MOM(df['close'])
+
+    #ATR
+    df['ATR'] = talib.ATR(df['high'],df['low'],df['close'])
+
     #RSI
     df['RSI'] = talib.RSI(df['close'])
+
     df.to_csv(os.path.join(PROJECT_PATH,'data/processed/MSFT_1year_feat.csv'),index=False)
 
 def import_dataset():

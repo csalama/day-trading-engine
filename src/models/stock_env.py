@@ -9,8 +9,7 @@ import numpy as np
 
 MAX_ACCOUNT_BALANCE = 2147483647
 MAX_NUM_SHARES = 2147483647
-MAX_SHARE_PRICE = 5000 #### Pending ####
-MAX_OPEN_POSITIONS = 5 #### Pending ####
+MAX_SHARE_PRICE = 1000 #### Pending ####
 MAX_STEPS = 50000 #### Pending ####
 
 INITIAL_ACCOUNT_BALANCE = 100000 #### Pending ####
@@ -34,7 +33,7 @@ class StockTradingEnv(gym.Env):
 
         #This contains all input variables we want our agent to consider scaled 0 to 1
         self.observation_space = spaces.Box(
-            low=0, high=1, shape=(self.df.shape[0], 14), dtype=np.float16)
+            low=0, high=1, shape=(self.df.shape[0], 15), dtype=np.float16)
             #1 by 14 box with (0,1) bounds for each
 
         MAX_STEPS=self.df.shape[0]
@@ -65,20 +64,21 @@ class StockTradingEnv(gym.Env):
 
         # List version of next observation
         obs = [
-            self.df.loc[self.current_step, 'open'] / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step, 'high'] / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step, 'low'] / MAX_SHARE_PRICE,
             self.df.loc[self.current_step, 'close'] / MAX_SHARE_PRICE,
             self.df.loc[self.current_step, 'volume'] / MAX_NUM_SHARES,
             self.df.loc[self.current_step, 'MA'] / MAX_SHARE_PRICE,
             self.df.loc[self.current_step, 'OBV'] / MAX_NUM_SHARES,
             self.df.loc[self.current_step, 'RSI'] / 100,
+            self.df.loc[self.current_step, 'TEMA'] / MAX_SHARE_PRICE,
+            self.df.loc[self.current_step, 'BBAND_u'] / MAX_SHARE_PRICE,
+            self.df.loc[self.current_step, 'BBAND_m'] / MAX_SHARE_PRICE,
+            self.df.loc[self.current_step, 'BBAND_l'] / MAX_SHARE_PRICE,
+            self.df.loc[self.current_step, 'MOM'] / MAX_SHARE_PRICE,
+            self.df.loc[self.current_step, 'ATR'] / MAX_SHARE_PRICE,
+            self.df.loc[self.current_step, 'CCI'] / MAX_SHARE_PRICE,
+            self.df.loc[self.current_step, 'HT_TRENDLINE'] / MAX_SHARE_PRICE,
             self.balance / MAX_ACCOUNT_BALANCE,
-            self.max_net_worth / MAX_ACCOUNT_BALANCE,
-            self.shares_held / MAX_NUM_SHARES,
-            self.cost_basis / MAX_SHARE_PRICE,
-            self.total_shares_sold / MAX_NUM_SHARES,
-            self.total_sales_value / (MAX_NUM_SHARES * MAX_SHARE_PRICE)
+            self.shares_held / MAX_NUM_SHARES
         ]
 
         #print(f'\n\n Observation for step {self.current_step}: {obs}\n')
@@ -139,7 +139,7 @@ class StockTradingEnv(gym.Env):
 
     def step(self, action):
         # Execute one time step within the current environment
-        print('Action given: {}'.format(action))
+        #print('Action given: {}'.format(action))
         self._take_action(action)
         self.current_step += 1
 
@@ -152,9 +152,9 @@ class StockTradingEnv(gym.Env):
         done = self.net_worth <= 0  #If net worth falls to 0, done
         #Set the reward as the balance * delay multiplier to encourage later rewards
 
-        delay_modifier = (self.current_step / MAX_STEPS)
-        reward = (self.balance-INITIAL_ACCOUNT_BALANCE) * delay_modifier
-
+        #delay_modifier = (self.current_step / MAX_STEPS)
+        reward = (self.net_worth) #* delay_modifier
+        print(reward)
         obs = self._next_observation()
 
         if done:

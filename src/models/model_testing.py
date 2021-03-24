@@ -24,78 +24,41 @@ from stock_env import StockTradingEnv
 FIN_PATH = os.path.join(PROJECT_PATH,'data/processed/MSFT_1year_feat.csv')
 
 def train_model():
-    df = import_dataset(FIN_PATH)
 
-    #df_tr,df_te = train_test_split(df,test_size=.33,random_state=13, shuffle=False)
-    #env = StockTradingEnv(df_tr[0:1000])
+    #Params
+    train_timesteps=100
+    policy_kwargs = dict(net_arch=[dict(pi=[1024, 1024, 1024, 1024],vf=[1024, 1024, 1024, 1024])])
 
-    # for i_episode in range(20):
-    #     observation = env.reset()
-    #     for t in range(100):
-    #         #env.render()
-    #         print(type(observation))
-    #         print(observation)
-    #         action = env.action_space.sample()
-    #         observation, reward, done, info = env.step(action)
-    #         if done:
-    #             print("Episode finished after {} timesteps".format(t+1))
-    #             break
     ### Build environment
-    df1=df
-    #print(df1)
-    #df2=df_tr[1000:1100].reset_index(drop=True)
-    env_tr = DummyVecEnv([lambda: StockTradingEnv(df1)])
-    #env_val = DummyVecEnv([lambda: StockTradingEnv(df2)])
-
-    # print(df_tr[0:1000].loc[0, 'open'])
-    # print(df1.shape)
-    # print(df2.shape)
-
-    ### Training
+    df = import_dataset(FIN_PATH)
+    env_tr = DummyVecEnv([lambda: StockTradingEnv(df)])
     n_actions = env_tr.action_space.shape[-1]
     param_noise = None
     action_noise = OrnsteinUhlenbeckActionNoise(mean=np.zeros(n_actions), sigma=float(0.5) * np.ones(n_actions))
 
-    train_timesteps=20000
-
-    # start = time.time()
-    # model = DDPG('MlpPolicy',
-    #               env_tr,
-    #               param_noise=param_noise,
-    #               action_noise=action_noise,
-    #               actor_lr = .1,
-    #               critic_lr = .1,
-    #               batch_size = 100000,
-    #               verbose=0)
-    # model.learn(total_timesteps=train_timesteps)
-    # end = time.time()
-    # print('Training time (DDPG): ', (end-start)/60,' minutes')
-    # model.save(os.path.join(PROJECT_PATH,'model/ddpg_initial') )
-
-    policy_kwargs = dict(net_arch=[dict(pi=[128, 128, 128],
-                                                          vf=[128, 128, 128])])
-
+    ### Training
     start = time.time()
     model = PPO2('MlpPolicy', env_tr, policy_kwargs=policy_kwargs, ent_coef = 0.005, nminibatches = 8)
     model.learn(total_timesteps=train_timesteps)
     end = time.time()
     print('Training time (PPO): ', (end - start) / 60, ' minutes')
-    model.save(os.path.join(PROJECT_PATH,'model/ppo2_20kstep') )
+    model.save(os.path.join(PROJECT_PATH,'model/ppo2_initial') )
 
     # ### Quickly validating
     # obs_trade = env_val.reset()
-    # reward_l = []
 
     # model = PPO2.load(os.path.join(PROJECT_PATH,'model/ppo2_initial'))
-    # obs_trade = env_tr.reset()
-    # for i in range(train_timesteps):
-    #     action,_states=model.predict(obs_trade)
-    #     obs_trade, rewards, dones, info = env_tr.step(action)
-    #     reward_l.append(rewards[0])
-    #     if i == (train_timesteps-1):
-    #         last_state = env_tr.render()
-    # plt.plot(range(train_timesteps),reward_l)
-    # plt.show()
+    obs_trade = env_tr.reset()
+    reward_l = []
+    for i in range(train_timesteps):
+        action,_states=model.predict(obs_trade)
+        obs_trade, rewards, dones, info = env_tr.step(action)
+        reward_l.append(rewards[0])
+        if i == (train_timesteps-1):
+            last_state = env_tr.render()
+    print(reward_l)
+    plt.plot(range(train_timesteps),reward_l)
+    plt.show()
 
     return None
 
@@ -135,7 +98,6 @@ def sample_results():
     timesteps=2000
     for i in range(timesteps):
         action = base_env.action_space.sample()
-        print('Action to give: {}'.format(action))
         obs_trade, rewards, dones, info = base_env.step(action)
         reward_l.append(rewards+100000)
         if i == (timesteps-1):
@@ -155,8 +117,37 @@ def import_dataset(PATH):
     return df
 
 def main():
-    sample_results()
-
+    train_model()
 
 if __name__ == '__main__':
     main()
+
+#df_tr,df_te = train_test_split(df,test_size=.33,random_state=13, shuffle=False)
+#env = StockTradingEnv(df_tr[0:1000])
+
+# for i_episode in range(20):
+#     observation = env.reset()
+#     for t in range(100):
+#         #env.render()
+#         print(type(observation))
+#         print(observation)
+#         action = env.action_space.sample()
+#         observation, reward, done, info = env.step(action)
+#         if done:
+#             print("Episode finished after {} timesteps".format(t+1))
+#             break
+
+
+# start = time.time()
+# model = DDPG('MlpPolicy',
+#               env_tr,
+#               param_noise=param_noise,
+#               action_noise=action_noise,
+#               actor_lr = .1,
+#               critic_lr = .1,
+#               batch_size = 100000,
+#               verbose=0)
+# model.learn(total_timesteps=train_timesteps)
+# end = time.time()
+# print('Training time (DDPG): ', (end-start)/60,' minutes')
+# model.save(os.path.join(PROJECT_PATH,'model/ddpg_initial') )
