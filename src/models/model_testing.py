@@ -15,6 +15,7 @@ from stable_baselines.ddpg.policies import DDPGPolicy;
 from stable_baselines.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise, AdaptiveParamNoiseSpec;
 from stable_baselines import DDPG,PPO2;
 from stable_baselines.ddpg import MlpPolicy
+from stable_baselines.common.cmd_util import make_vec_env
 
 from stock_env import StockTradingEnv
 
@@ -22,8 +23,8 @@ FIN_PATH = os.path.join(PROJECT_PATH,'data/processed/MSFT_1year_feat.csv')
 
 def train_model():
     #Params
-    train_timesteps=124632 #75% of our training dataset
-    policy_kwargs = dict(net_arch=[dict(pi=[512, 512, 512, 512],vf=[512, 512, 512, 512])])
+    train_timesteps=20772 #25% of our training dataset
+    policy_kwargs = dict(net_arch=[dict(pi=[128, 128, 128],vf=[128, 128, 128])])
 
     ### Build environment
     df = import_dataset(FIN_PATH)
@@ -56,25 +57,29 @@ def train_model():
 
 def test_model():
     df = import_dataset(FIN_PATH)
-    df1=df
 
-    env_tr = DummyVecEnv([lambda: StockTradingEnv(df1)])
-
-    model = PPO2.load(os.path.join(PROJECT_PATH,'model/ppo2_20kstep'))
+    env_tr = DummyVecEnv([lambda: StockTradingEnv(df)])
+    print('Loading model...')
+    model = PPO2.load(os.path.join(PROJECT_PATH,'model/ppo2_main'))
+    print('Finished loading model.')
 
     obs_trade = env_tr.reset()
-
-    timesteps=2000
+    timesteps=20772
     reward_l = []
+    action_l = []
+    observations = pd.DataFrame(obs_trade[0][0:timesteps])
+    print('Predicting...')
     for i in range(timesteps):
         action,_states=model.predict(obs_trade)
         obs_trade, rewards, dones, info = env_tr.step(action)
         reward_l.append(rewards[0])
+        action_l.append(action[0])
         if i == (timesteps-1):
             last_state = env_tr.render()
-    plt.plot(range(len(reward_l)),reward_l)
-    plt.show()
-
+    print('Finished predicting.')
+    details = pd.DataFrame(data = {'reward':reward_l,'action_tup':action_l})
+    joint = pd.concat([details,observations],ignore_index=True)
+    joint.to_csv(os.path.join(PROJECT_PATH,'data/processed/testing_data.csv'),index=False)
     return None
 
 def sample_results():
@@ -109,7 +114,7 @@ def import_dataset(PATH):
     return df
 
 def main():
-    train_model()
+    test_model()
 
 if __name__ == '__main__':
     main()

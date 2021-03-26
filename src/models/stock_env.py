@@ -33,7 +33,7 @@ class StockTradingEnv(gym.Env):
 
         #This contains all input variables we want our agent to consider scaled 0 to 1
         self.observation_space = spaces.Box(
-            low=0, high=1, shape=(self.df.shape[0], 15), dtype=np.float16)
+            low=0, high=1, shape=(self.df.shape[0], 12), dtype=np.float16)
             #1 by 14 box with (0,1) bounds for each
 
         MAX_STEPS=self.df.shape[0]
@@ -74,9 +74,6 @@ class StockTradingEnv(gym.Env):
             self.df.loc[self.current_step, 'BBAND_m'] / MAX_SHARE_PRICE,
             self.df.loc[self.current_step, 'BBAND_l'] / MAX_SHARE_PRICE,
             self.df.loc[self.current_step, 'MOM'] / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step, 'ATR'] / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step, 'CCI'] / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step, 'HT_TRENDLINE'] / MAX_SHARE_PRICE,
             self.balance / MAX_ACCOUNT_BALANCE,
             self.shares_held / MAX_NUM_SHARES
         ]
@@ -112,8 +109,7 @@ class StockTradingEnv(gym.Env):
             self.balance -= additional_cost
 
             #Set cost basis as total value of the stocks purchased divided by total number of shares
-            self.cost_basis = (
-                prev_cost + additional_cost) / (self.shares_held + shares_bought)
+            self.cost_basis = (prev_cost + additional_cost) / (self.shares_held + shares_bought)
 
             #Add the new shares to the shares_held
             self.shares_held += shares_bought
@@ -154,7 +150,7 @@ class StockTradingEnv(gym.Env):
 
         #delay_modifier = (self.current_step / MAX_STEPS)
         reward = (self.net_worth) #* delay_modifier
-        print(reward)
+        #print(reward)
         obs = self._next_observation()
 
         if done:
